@@ -41,10 +41,32 @@ def main():
 	loadImages() # Load Images only once, before while loop
 
 	running = True
+	square_selected = () # Keep track of last click of user, tuple:(row, col)
+	player_clicks = [] # Keep track  of player clicks, two tuples: [(r, c), (r, c)]
+
 	while running: # -------------------- MAIN LOOP -----------------------------------------------
 		for e in p.event.get():
 			if e.type == p.QUIT:
 				running = False
+			elif e.type == p.MOUSEBUTTONDOWN: # Mouse Click
+				location = p.mouse.get_pos() # (x, y) location of mouse
+				col = location[0]//SQUARE_SIZE # These will need to be changed when more panels are added
+				row = location[1]//SQUARE_SIZE # Gets mouse pos based on click location on screen
+				if square_selected == (row, col): # User clicked same square twice / Deselect
+					square_selected = () # Deselect
+					player_clicks = [] # Clear Player clicks
+				else:
+					square_selected = (row, col)
+					player_clicks.append(square_selected) # Append first and second clicks
+				if len(player_clicks) == 2: # Check if seconds click, if so make move
+					move = ChessEngine.Move(player_clicks[0], player_clicks[1], gs.board)
+					gs.makeMove(move)
+					square_selected = () # Reset User Clicks
+					player_clicks = []
+
+
+
+
 		drawGameState(screen, gs)
 		clock.tick(MAX_FPS)
 		p.display.flip()
