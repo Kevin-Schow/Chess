@@ -23,11 +23,74 @@ class GameState():
 		self.move_log = []
 
 
+	'''
+	Takes a move as parameter and executes it
+	Does not work for castling, en-passant, or pawn promotion
+	'''
 	def makeMove(self, move):
 		self.board[move.startRow][move.startCol] = '--'
 		self.board[move.endRow][move.endCol] = move.pieceMoved
 		self.move_log.append(move) # Log move so can use undo
 		self.white_to_move = not self.white_to_move # Swap active player
+
+
+	'''
+	Undo the last move made
+	'''
+	def undoMove(self):
+		if len(self.move_log) != 0: # Make sure there is a move to undo
+			move = self.move_log.pop()
+			self.board[move.startRow][move.startCol] = move.pieceMoved
+			self.board[move.endRow][move.endCol] = move.pieceCaptured
+			self.white_to_move = not self.white_to_move # Switch turns back
+
+
+
+
+	'''
+	All Moves considering checks
+	'''
+	def getValidMoves(self):
+		return self.getAllPossibleMoves() # TEMPORARY, doesn't look for checks
+
+
+	'''
+	All Moves without considering checks
+	'''
+	def getAllPossibleMoves(self):
+		moves = []
+		for r in range(len(self.board))
+			for c in range(len(self.board[r])):
+				turn = self.board[r][c][0]
+				if (turn == 'w' and self.white_to_move) and (turn == 'b' and not self.white_to_move):
+					piece = self.board[r][c][1]
+					if piece == 'P':
+						self.getPawnMoves(r, c, moves)
+					elif piece == 'R':
+						self.getRookMoves(r, c, moves)
+		return moves
+
+
+
+	'''
+	Get all the Pawn moves at row, column and add these moves to the list
+	'''
+	getPawnMoves(self, r, c, moves):
+		pass
+
+
+
+	'''
+	Get all the Rook moves at row, column and add these moves to the list
+	'''
+	getRookMoves(self, r, c, moves):
+		pass
+
+
+
+
+
+
 
 
 class Move():
@@ -47,6 +110,17 @@ class Move():
 		self.endCol = endSq[1]
 		self.pieceMoved = board[self.startRow][self.startCol]
 		self.pieceCaptured = board[self.endRow][self.endCol]
+		self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
+
+
+	'''
+	Overriding the equals method
+	'''
+	def __eq__(self, other):
+		if isinstance(other, Move):
+			return self.moveID == other.moveID
+		return False
+
 
 
 	def getChessNotation(self):

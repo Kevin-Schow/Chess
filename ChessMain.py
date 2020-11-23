@@ -38,17 +38,19 @@ def main():
 	clock = p.time.Clock()
 	screen.fill(p.Color('white'))
 	gs = ChessEngine.GameState()
-	loadImages() # Load Images only once, before while loop
+	validMoves = gs.getValidMoves()
+	moveMade = False # Flag variable for when a move is made
 
+	loadImages() # Load Images only once, before while loop
 	running = True
 	square_selected = () # Keep track of last click of user, tuple:(row, col)
 	player_clicks = [] # Keep track  of player clicks, two tuples: [(r, c), (r, c)]
 
-	while running: # -------------------- MAIN LOOP -----------------------------------------------
+	while running: # ---------------------------------------------------------- MAIN LOOP ------------- #
 		for e in p.event.get():
 			if e.type == p.QUIT:
 				running = False
-			elif e.type == p.MOUSEBUTTONDOWN: # Mouse Click
+			elif e.type == p.MOUSEBUTTONDOWN: # -------------------------------Mouse Handler ---------- #
 				location = p.mouse.get_pos() # (x, y) location of mouse
 				col = location[0]//SQUARE_SIZE # These will need to be changed when more panels are added
 				row = location[1]//SQUARE_SIZE # Gets mouse pos based on click location on screen
@@ -60,13 +62,18 @@ def main():
 					player_clicks.append(square_selected) # Append first and second clicks
 				if len(player_clicks) == 2: # Check if seconds click, if so make move
 					move = ChessEngine.Move(player_clicks[0], player_clicks[1], gs.board)
-					gs.makeMove(move)
+					if move in validMoves:
+						gs.makeMove(move)
+						moveMade = True
 					square_selected = () # Reset User Clicks
 					player_clicks = []
-
-
-
-
+			elif e.type == p.KEYDOWN: # -----------------------------------------Key Handler------------ #
+				if e.key == p.K_z: # Undo -- 'z'
+					gs.undoMove()
+					moveMade = True
+		if moveMade:
+			validMoves = gs.getValidMoves() # Generate valid move after a move is made
+			moveMade = False
 		drawGameState(screen, gs)
 		clock.tick(MAX_FPS)
 		p.display.flip()
