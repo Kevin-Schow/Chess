@@ -62,12 +62,13 @@ def main():
 					player_clicks.append(square_selected) # Append first and second clicks
 				if len(player_clicks) == 2: # Check if seconds click, if so make move
 					move = ChessEngine.Move(player_clicks[0], player_clicks[1], gs.board)
-					if move in validMoves:
-						gs.makeMove(move)
-						moveMade = True
-						square_selected = () # Reset User Clicks
-						player_clicks = []
-					else:
+					for i in range(len(validMoves)):
+						if move == validMoves[i]:
+							gs.makeMove(validMoves[i])
+							moveMade = True
+							square_selected = () # Reset User Clicks
+							player_clicks = []
+					if not moveMade:
 						player_clicks = [square_selected]
 			elif e.type == p.KEYDOWN: # -----------------------------------------Key Handler------------ #
 				if e.key == p.K_z: # Undo -- 'z'
