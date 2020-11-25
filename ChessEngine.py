@@ -22,7 +22,7 @@ class gameState():
 		self.moveFunctions = {'P': self.getPawnMoves, 'R': self.getRookMoves, 'N': self.getKnightMoves, 'B': self.getBishopMoves, 'Q': self.getQueenMoves, 'K': self.getKingMoves}
 		
 		self.whiteToMove = True
-		self.move_log = []
+		self.moveLog = []
 		self.whiteKingLocation = (7, 4)
 		self.blackKingLocation = (0, 4)
 		self.inCheck = False
@@ -38,34 +38,36 @@ class gameState():
 	Does not work for castling, en-passant, or pawn promotion
 	'''
 	def makeMove(self, move):
-		self.board[move.startRow][move.startCol] = '--'
 		self.board[move.endRow][move.endCol] = move.pieceMoved
-		self.move_log.append(move) # Log move so can use undo
+		self.board[move.startRow][move.startCol] = '--'
+		self.moveLog.append(move) # Log move so can use undo
 		self.whiteToMove = not self.whiteToMove # Swap active player
 		# Update King's location if moved
 		if move.pieceMoved == 'wK':
 			self.whiteKingLocation = (move.endRow, move.endCol)
 		elif move.pieceMoved == 'bK':
 			self.blackKingLocation = (move.endRow, move.endCol)
-		# Pawn Promotion
-		if move.isPawnPromotion:
-			self.board[move.endRow][move.endCol] = move.pieceMoved[0] + 'Q'
-		# En Passant
-		if move.isEnpassantMove:
-			self.board[move.startRow][move.endRow] = '--' # Capture the pawn
-		# Update empassntPossible var
+		# If pawn moves twice, next move can capture en passant
 		if move.pieceMoved[1] == 'P' and abs(move.startRow - move.endRow) == 2: # 2 square pawn advance
 			self.enpassantPossible = ((move.startRow + move.endRow)//2, move.startCol)
 		else:
 			self.enpassantPossible = ()
-
+		# En Passant
+		if move.isEnpassantMove:
+			self.board[move.startRow][move.endRow] = '--' # Capture the pawn
+		# Pawn Promotion
+		if move.isPawnPromotion:
+			promotedPiece = input('Promote to Q, R, B, or N:')
+			self.board[move.endRow][move.endCol] = move.pieceMoved[0] + promotedPiece
+		
+		
 
 	'''
 	Undo the last move made
 	'''
 	def undoMove(self):
-		if len(self.move_log) != 0: # Make sure there is a move to undo
-			move = self.move_log.pop()
+		if len(self.moveLog) != 0: # Make sure there is a move to undo
+			move = self.moveLog.pop()
 			self.board[move.startRow][move.startCol] = move.pieceMoved
 			self.board[move.endRow][move.endCol] = move.pieceCaptured
 			self.whiteToMove = not self.whiteToMove # Switch turns back
@@ -74,7 +76,7 @@ class gameState():
 				self.whiteKingLocation = (move.startRow, move.startCol)
 			elif move.pieceMoved == 'bK':
 				self.blackKingLocation = (move.startRow, move.startCol)
-			# Undo Enpassant
+			# Undo Enpassant is different
 			if move.isEnpassantMove:
 				self.board[move.endRow][move.endCol] = '--' # Leave landing square blank
 				self.board[move.startRow][move.endCol] = move.pieceCaptured
@@ -90,7 +92,6 @@ class gameState():
 
 	# Advanced Algorithm
 	def getValidMoves(self):
-		tempEnpassantPossible = self.enpassantPossible
 		moves = []
 		self.inCheck, self.pins, self.checks = self.checkForPinsAndChecks()
 		if self.whiteToMove:
@@ -126,7 +127,6 @@ class gameState():
 				self.getKingMoves(kingRow, kingCol, moves)
 		else: # Not in check so all moves are fine
 			moves = self.getAllPossibleMoves()
-		self.enpassantPossible = tempEnpassantPossible
 
 	# Naive Algorithm
 
@@ -257,46 +257,41 @@ class gameState():
 				self.pins.remove(self.pins[i])
 				break
 
-		if self.whiteToMove: # White Pawn moves
-			if self.board[r-1][c] == '--': # 1 square pawn advance
-				if not piecePinned or pinDirection == (-1, 0):
-					moves.append(Move((r , c), (r-1, c), self.board))
-					if r == 6 and self.board[r-2][c] == '--': # 2 square pawn advance
-						moves.append(Move((r , c), (r-2, c), self.board))
-			# Captures
-			if c-1 >= 0: # Capture to the left
-				if self.board[r-1][c-1][0] == 'b': # Enemy piece to capture
-					if not piecePinned or pinDirection == (-1, -1):
-						moves.append(Move((r , c), (r-1, c-1), self.board))
-				elif (r-1, c-1) == self.isEnpassantMove:
-						moves.append(Move((r , c), (r-1, c-1), self.board, isEnpassantMove=True))
-
-			if c+1 <= 7: # Capture to the right
-				if self.board[r-1][c+1][0] == 'b': # Enemy piece to capture
-					if not piecePinned or pinDirection == (-1, 1):
-						moves.append(Move((r , c), (r-1, c+1), self.board))
-				elif (r-1, c+1) == self.isEnpassantMove:
-						moves.append(Move((r , c), (r-1, c+1), self.board, isEnpassantMove=True))
+		if self.whiteToMove:
+			moveAmount = -1
+			startRow = 6
+			backRow = 0
+			enemyColor = 'b'
 		else:
-			# Black Pawn moves
-			if self.board[r+1][c] == '--': # 1 square pawn advance
-				if not piecePinned or pinDirection == (1, 0):
-					moves.append(Move((r , c), (r+1, c), self.board))
-					if r == 1 and self.board[r+2][c] == '--': # 2 square pawn advance
-						moves.append(Move((r , c), (r+2, c), self.board))
-			# Captures
-			if c-1 >= 0: # Capture to the left
-				if self.board[r+1][c-1][0] == 'w': # Enemy piece to capture
-					if not piecePinned or pinDirection == (1, -1):
-						moves.append(Move((r , c), (r+1, c-1), self.board))
-				elif (r+1, c-1) == self.isEnpassantMove:
-						moves.append(Move((r , c), (r+1, c-1), self.board, isEnpassantMove=True))
-			if c+1 <= 7: # Capture to the right
-				if self.board[r+1][c+1][0] == 'w': # Enemy piece to capture
-					if not piecePinned or pinDirection == (1, 1):
-						moves.append(Move((r , c), (r+1, c+1), self.board))
-				elif (r+1, c+1) == self.isEnpassantMove:
-						moves.append(Move((r , c), (r+1, c+1), self.board, isEnpassantMove=True))
+			moveAmount = 1
+			startRow = 1
+			backRow = 7
+			enemyColor = 'w'
+			
+		if self.board[r+moveAmount][c] == '--': # 1 square pawn advance
+			if not piecePinned or pinDirection == (moveAmount, 0):
+				if r+moveAmount == backRow: # If piece gets to back row then it is a pawn promotion
+					isPawnPromotion = True
+				moves.append(Move((r , c), (r+moveAmount, c), self.board, isPawnPromotion=isPawnPromotion))
+				if r == startRow and self.board[r+2*moveAmount][c] == '--': # 2 square pawn advance
+					moves.append(Move((r , c), (r+2*moveAmount, c), self.board))
+		if c-1 >= 0: # Capture to the left
+			if not piecePinned or pinDirection == (moveAmount, -1):
+				if self.board[r + moveAmount][c - 1][0] == enemyColor:
+					if r + moveAmount == backRow: # If piece gets to back row then it is a pawn promotion
+						isPawnPromotion = True
+					moves.append(Move((r , c), (r+moveAmount, c-1), self.board, isPawnPromotion=isPawnPromotion))
+				if (r+moveAmount, c-1) == self.enpassantPossible:
+					moves.append(Move((r , c), (r+moveAmount, c-1), self.board, isEnpassantMove=True))
+		if c+1 <= 7: # Capture to the right
+			if not piecePinned or pinDirection == (moveAmount, 1):
+				if self.board[r + moveAmount][c + 1][0] == enemyColor: # Enemy piece to capture
+					if r + moveAmount == backRow: # If piece gets to back row then it is a pawn promotion
+						isPawnPromotion = True
+					moves.append(Move((r , c), (r+moveAmount, c+1), self.board, isPawnPromotion=isPawnPromotion))
+				if (r-1, c+1) == self.isEnpassantMove:
+					moves.append(Move((r , c), (r+moveAmount, c+1), self.board, isEnpassantMove=True))
+
 
 	'''
 	Get all the Rook moves at row, column and add these moves to the list
@@ -426,20 +421,17 @@ class Move():
 					'e': 4, 'f': 5, 'g': 6, 'h': 7}
 	colsToFiles = {v: k for k, v in filesToCols.items()}
 
-	def __init__(self, startSq, endSq, board, isEnpassantMove=False:
+	def __init__(self, startSq, endSq, board, isEnpassantMove=False, isPawnPromotion=False)
 		self.startRow = startSq[0]
 		self.startCol = startSq[1]
 		self.endRow = endSq[0]
 		self.endCol = endSq[1]
 		self.pieceMoved = board[self.startRow][self.startCol]
 		self.pieceCaptured = board[self.endRow][self.endCol]
-		# Pawn promotion
-		self.isPawnPromotion = (self.pieceMoved == 'wP' and self.endRow == 0) or (self.pieceMoved == 'bP' and self.endRow == 7)
-		# En Passant
 		self.isEnpassantMove = isEnpassantMove
-		if self.isEnpassantMove:
-			self.pieceCaptured = 'wP' if self.pieceMoved == 'bP' else 'bP'
-
+		self.isPawnPromotion = isPawnPromotion
+		if isEnpassantMove:
+			self.pieceCaptured = 'bP' if self.pieceMoved == 'wP' else 'wP'
 		self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
 
 	'''
