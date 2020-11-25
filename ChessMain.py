@@ -1,6 +1,6 @@
 '''
 Main Driver File
-Handles User Input and Current Gamestate Object
+Handles User Input and Current gamestate Object
 
 '''
 
@@ -37,7 +37,7 @@ def main():
 	screen = p.display.set_mode((WIDTH, HEIGHT))
 	clock = p.time.Clock()
 	screen.fill(p.Color('white'))
-	gs = ChessEngine.GameState()
+	gs = ChessEngine.gameState()
 	validMoves = gs.getValidMoves()
 	moveMade = False # Flag variable for when a move is made
 
@@ -105,7 +105,7 @@ def drawBoard(screen):
 
 
 '''
-Draw Pieces to Board using current GameState.board
+Draw Pieces to Board using current gameState.board
 '''
 def drawPieces(screen, board):
 	for r in range(DIMENSION):
