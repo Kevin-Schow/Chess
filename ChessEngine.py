@@ -466,7 +466,7 @@ class gameState():
 						self.blackKingLocation = (endRow, endCol)
 					inCheck, pins, checks = self.checkForPinsAndChecks()
 					if not inCheck:
-						moves.append(Move((r, c), endRow, endCol), (self.board))
+						moves.append(Move((r, c), (endRow, endCol), (self.board)))
 					# Place king back on original location
 					if allyColor == 'w':
 						self.whiteKingLocation = (r, c)
