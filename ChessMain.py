@@ -40,45 +40,71 @@ def main():
 	gs = ChessEngine.gameState()
 	validMoves = gs.getValidMoves()
 	moveMade = False # Flag variable for when a move is made
-
+	animate = False # Flag for when to animate move
 	loadImages() # Load Images only once, before while loop
 	running = True
 	square_selected = () # Keep track of last click of user, tuple:(row, col)
 	player_clicks = [] # Keep track  of player clicks, two tuples: [(r, c), (r, c)]
+	gameOver = False
 
 	while running: # ---------------------------------------------------------- MAIN LOOP ------------- #
 		for e in p.event.get():
 			if e.type == p.QUIT:
 				running = False
-			elif e.type == p.MOUSEBUTTONDOWN: # -------------------------------Mouse Handler ---------- #
-				location = p.mouse.get_pos() # (x, y) location of mouse
-				col = location[0]//SQUARE_SIZE # These will need to be changed when more panels are added
-				row = location[1]//SQUARE_SIZE # Gets mouse pos based on click location on screen
-				if square_selected == (row, col): # User clicked same square twice / Deselect
-					square_selected = () # Deselect
-					player_clicks = [] # Clear Player clicks
-				else:
-					square_selected = (row, col)
-					player_clicks.append(square_selected) # Append first and second clicks
-				if len(player_clicks) == 2: # Check if seconds click, if so make move
-					move = ChessEngine.Move(player_clicks[0], player_clicks[1], gs.board)
-					for i in range(len(validMoves)):
-						if move == validMoves[i]:
-							gs.makeMove(validMoves[i])
-							moveMade = True
-							square_selected = () # Reset User Clicks
-							player_clicks = []
-					if not moveMade:
-						player_clicks = [square_selected]
+			if not gameOver:
+				if e.type == p.MOUSEBUTTONDOWN: # -------------------------------Mouse Handler ---------- #
+					location = p.mouse.get_pos() # (x, y) location of mouse
+					col = location[0]//SQUARE_SIZE # These will need to be changed when more panels are added
+					row = location[1]//SQUARE_SIZE # Gets mouse pos based on click location on screen
+					if square_selected == (row, col): # User clicked same square twice / Deselect
+						square_selected = () # Deselect
+						player_clicks = [] # Clear Player clicks
+					else:
+						square_selected = (row, col)
+						player_clicks.append(square_selected) # Append first and second clicks
+					if len(player_clicks) == 2: # Check if seconds click, if so make move
+						move = ChessEngine.Move(player_clicks[0], player_clicks[1], gs.board)
+						for i in range(len(validMoves)):
+							if move == validMoves[i]:
+								gs.makeMove(validMoves[i])
+								moveMade = True
+								animate = True
+								square_selected = () # Reset User Clicks
+								player_clicks = []
+						if not moveMade:
+							player_clicks = [square_selected]
 			elif e.type == p.KEYDOWN: # -----------------------------------------Key Handler------------ #
 				if e.key == p.K_z: # Undo -- 'z'
 					gs.undoMove()
 					moveMade = True
+					animate = False
+				if e.key == p.K_r: # Reset Board -- 'r'
+					gs = ChessEngine.gameState()
+					validMoves = gs.getValidMoves()
+					square_selected = ()
+					player_clicks = []
+					moveMade = False
+					animate = False
 		if moveMade:
-			animateMove(gs.moveLog[-1], screen, gs.board, clock)
+			if animate:
+				animateMove(gs.moveLog[-1], screen, gs.board, clock)
 			validMoves = gs.getValidMoves() # Generate valid move after a move is made
 			moveMade = False
+			animate = False
 		drawGameState(screen, gs, validMoves, square_selected)
+
+		if gs.checkMate:
+			gameOver = True
+			if gs.whiteToMove:
+				drawText(screen, 'Checkmate.\nBlack Wins.')
+			else:
+				drawText(screen, 'Checkmate.\nWhite Wins.')
+		elif gs.staleMate:
+			gameOver = True
+			drawText(screen, 'Stalemate.')
+
+
+
 		clock.tick(MAX_FPS)
 		p.display.flip()
 
@@ -162,6 +188,15 @@ def  animateMove(move, screen, board, clock):
 		screen.blit(IMAGES[move.pieceMoved], p.Rect(c*SQUARE_SIZE, r*SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 		p.display.flip()
 		clock.tick(60)
+
+
+def drawText(screen, text):
+	font = p.font.SysFont('Helvetica', 32, True, False)
+	textObject = font.render(text, 0, p.Color('Gray'))
+	textLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH/2 - textObject.get_width()/2, HEIGHT/2 - textObject.get_height()/2)
+	screen.blit(textObject, textLocation)
+	textObject = font.render(text, 0, p.Color('Black'))
+	screen.blit(textObject, textLocation.move(2, 2))
 
 
 
