@@ -187,6 +187,7 @@ class gameState():
 				self.getKingMoves(kingRow, kingCol, moves)
 		else: # Not in check so all moves are fine
 			moves = self.getAllPossibleMoves()
+		return moves
 
 	# Naive Algorithm
 
@@ -309,6 +310,7 @@ class gameState():
 	'''
 	def getPawnMoves(self, r, c, moves):
 		piecePinned = False
+		isPawnPromotion = False
 		pinDirection = ()
 		for i in range(len(self.pins)-1, -1, -1):
 			if self.pins[i][0] == r and self.pins[i][1] ==c:
@@ -341,7 +343,7 @@ class gameState():
 					if r + moveAmount == backRow: # If piece gets to back row then it is a pawn promotion
 						isPawnPromotion = True
 					moves.append(Move((r , c), (r+moveAmount, c-1), self.board, isPawnPromotion=isPawnPromotion))
-				if (r+moveAmount, c-1) == self.enpassantPossible:
+				if (r+moveAmount, c-1) == self.isEnpassantMove: # Was enpassantPossible
 					moves.append(Move((r , c), (r+moveAmount, c-1), self.board, isEnpassantMove=True))
 		if c+1 <= 7: # Capture to the right
 			if not piecePinned or pinDirection == (moveAmount, 1):
@@ -515,7 +517,7 @@ class Move():
 					'e': 4, 'f': 5, 'g': 6, 'h': 7}
 	colsToFiles = {v: k for k, v in filesToCols.items()}
 
-	def __init__(self, startSq, endSq, board, isEnpassantMove=False, isPawnPromotion=False, isCastleMove=False)
+	def __init__(self, startSq, endSq, board, isEnpassantMove=False, isPawnPromotion=False, isCastleMove=False):
 		self.startRow = startSq[0]
 		self.startCol = startSq[1]
 		self.endRow = endSq[0]
